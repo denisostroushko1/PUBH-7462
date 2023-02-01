@@ -1,0 +1,160 @@
+---
+title: "Activity Week 2"
+author: "Denis Ostroushko"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+options(scipen=999)
+```
+
+```{r}
+
+library(tidyverse)
+library(kableExtra)
+
+# Taks 1: load the package
+library(KMsurv)
+
+```
+
+```{r read the data }
+
+# Task 2: laod the data 
+bmt <- read.csv('/Users/denisostroushko/Desktop/bmt.csv')
+
+# Task 3: rename the columns 
+colnames(bmt) <- c('group', 'time_to_follow_up', 'surv_time', 'death_flag', 'relapse_flag', 'patient_age', 'donor_age')
+
+```
+
+```{r}
+
+class(bmt$group)
+
+summary(as.factor(bmt$group))
+
+# new variable for group description 
+
+bmt$group_descr <- 
+  factor(
+  with(bmt, 
+       case_when(
+         group == 1 ~ "ALL", 
+         group == 2 ~ "AML Low Risk", 
+         TRUE ~ "AML High Risk "
+       )), 
+  levels = c("ALL",  "AML Low Risk", "AML High Risk "))
+
+bmt$death_flag_logical <- as.factor(bmt$death_flag)
+
+bmt$relapse_flag_logical <- as.factor(bmt$relapse_flag)
+
+
+```
+
+```{r summary task 5}
+
+summary_by_group <- 
+  
+  bmt %>% 
+  
+  group_by(
+    group
+  ) %>% 
+  
+  summarize(
+    N = n(), 
+    `Mean Patient Age` = round(mean(patient_age), 2), 
+    `Mean Donor Age` = round(mean(donor_age), 2), 
+    `Median Follow Up Time` = round(median(time_to_follow_up), 2), 
+    `Median Survival Time` = round(median(surv_time), 2), 
+    `% Died` = paste0(round(sum(death_flag)/n(), 4) * 100, "%") ,
+    `% Relapsed` = paste0(round(sum(relapse_flag)/n(), 4) * 100, "%") 
+  ) %>% t() 
+
+colnames(summary_by_group) <- unique(bmt$group_descr)
+
+summary_by_group <- summary_by_group[-1, ]
+
+summary_by_group %>% 
+  kable(booktabs = T, align = 'c') %>% 
+  kable_styling(bootstrap_options = c("striped", "condensed"))  
+
+```
+
+```{r task 6}
+
+bmt$relapse_or_die_flag <- 
+  with(bmt, 
+       case_when(
+         relapse_flag == 1 | death_flag == 1 ~ "Yes", 
+         TRUE ~ "No"
+       ))
+
+bmt %>% 
+  group_by( group_descr, relapse_or_die_flag) %>% 
+  summarize(N = n() , 
+            mean(donor_age - patient_age), 
+            sd(donor_age - patient_age)) %>% 
+  
+  arrange(group_descr, relapse_or_die_flag ) %>% 
+  
+  mutate(across(3:4, round, 2))
+
+```
+
+```{r task 7}
+
+ggplot(data = bmt %>% filter(death_flag == 0), 
+       aes(x = surv_time, 
+           color = group_descr, 
+           fill = group_descr)) + 
+  geom_density(alpha = 0.5, color = NA) + 
+  scale_fill_discrete(name = "Disease Group") + 
+  xlab("Follow Up Time") + 
+  ylab("") + 
+  ggtitle("Follow up time for individuals alive at the end of the study ")
+
+```
+
+```{R task 8}
+
+bmt$donor_patient_age_diff_cat <- 
+  factor(
+    with(bmt, 
+       case_when(
+         patient_age - donor_age >= 5 ~ "Donor >= 5 year younger", 
+         
+         patient_age - donor_age >= -5 & 
+            patient_age - donor_age < 5 ~ "Donor within 5 years ", 
+         
+         patient_age - donor_age <= -5 ~ "Donor >= 5 year older", 
+       )
+       ), 
+    levels = c("Donor >= 5 year younger", "Donor within 5 years ","Donor >= 5 year older")
+    ) # much easier to do with a cut function!!! 
+            # then we gonna label the cut version of the data with those things in green above 
+
+ggplot(data = bmt %>% filter(relapse_flag == 1), 
+       aes(x = patient_age, 
+           y = surv_time)) + 
+  
+  geom_point(alpha = 0.5, 
+             aes(size = donor_patient_age_diff_cat,
+                 color = donor_patient_age_diff_cat)) + 
+  
+  scale_color_manual(values=c("black", "chartreuse3", "purple")) + 
+  
+  theme_minimal() +
+  
+  theme(legend.title = element_blank()) +
+  
+  ggtitle("Time to relapse vs patient age, by relative donor age") +
+  
+  ylab("Time to relapse") +
+  xlab("Patient age")
+
+```

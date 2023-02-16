@@ -165,38 +165,51 @@ atus_data <- atus_data %>%
 # Q3 
 
 # okay so it seems that the activities are all in their own column. So, we summarize the data and then pivot it 
+# not a reproducible solution since we hard coded the column names. 
   
-  atus_data %>% 
-    summarize(
-      "SLEEPING" = mean(ACT_SLEEPING), 
-      "SOCIAL"	= mean(ACT_SOCIAL),
-      "WORK" = mean(ACT_WORK),
-      "HHACT" = mean(ACT_HHACT),
-      "FOOD" = mean(ACT_FOOD),
-      "CAREHH" = mean(ACT_CAREHH),
-      "PURCH"	= mean(ACT_PURCH),
-      "SPORTS"	= mean(ACT_SPORTS),
-      "EDUC"	= mean(ACT_EDUC),
-      "RELIG"	= mean(ACT_RELIG),
-      "CARENHH"	= mean(ACT_CARENHH),
-      "VOL"	= mean(ACT_VOL)
-    ) %>% 
-    
-    pivot_longer(
-      cols = c('SLEEPING', 'SOCIAL', 'WORK', 'HHACT', 'FOOD', 'CAREHH', 'PURCH', 'SPORTS', 'EDUC', 'RELIG', 'CARENHH', 'VOL' ), 
-      names_to = 'ACTIVITY', 
-      values_to = 'MINS_PER_DAY'
-    ) %>% 
-    
-    mutate(MINS_PER_DAY = round(MINS_PER_DAY)) %>% 
+  # atus_data %>% 
+  #   summarize(
+  #     "SLEEPING" = mean(ACT_SLEEPING), 
+  #     "SOCIAL"	= mean(ACT_SOCIAL),
+  #     "WORK" = mean(ACT_WORK),
+  #     "HHACT" = mean(ACT_HHACT),
+  #     "FOOD" = mean(ACT_FOOD),
+  #     "CAREHH" = mean(ACT_CAREHH),
+  #     "PURCH"	= mean(ACT_PURCH),
+  #     "SPORTS"	= mean(ACT_SPORTS),
+  #     "EDUC"	= mean(ACT_EDUC),
+  #     "RELIG"	= mean(ACT_RELIG),
+  #     "CARENHH"	= mean(ACT_CARENHH),
+  #     "VOL"	= mean(ACT_VOL)
+  #   ) %>% 
+  #   
+  #   pivot_longer(
+  #     cols = c('SLEEPING', 'SOCIAL', 'WORK', 'HHACT', 'FOOD', 'CAREHH', 'PURCH', 'SPORTS', 'EDUC', 'RELIG', 'CARENHH', 'VOL' ), 
+  #     names_to = 'ACTIVITY', 
+  #     values_to = 'MINS_PER_DAY'
+  #   ) %>% 
+  #   
+  #   mutate(MINS_PER_DAY = round(MINS_PER_DAY)) %>% 
+  # 
+  #   arrange(-MINS_PER_DAY) ->  sorted_data_store # sort the table according to the requirement and store the table for future use 
+  #   
+  #   sorted_data_store %>% 
+  #     kable(booktabs = T, full_width = T) %>%
+  #     kable_styling(bootstrap_options = c("striped", "condensed"))
   
-    arrange(-MINS_PER_DAY) ->  sorted_data_store # sort the table according to the requirement and store the table for future use 
-    
-    sorted_data_store %>% 
-      kable(booktabs = T, full_width = T) %>%
-      kable_styling(bootstrap_options = c("striped", "condensed"))
-  
+# A better practice and a better solution by the TA. 
+atus_long <- atus %>% pivot_longer(starts_with("ACT_"), # pivot all columns that contain a string ACT_ in it
+                    names_to = "activity",
+                    values_to = "minutes", 
+                    names_prefix = "ACT_") 
 
+activity_means <- atus_long %>% # now we have a much more simple chunk of code that works with a restricted class or 
+                                # number of columns 
+  group_by(activity) %>%
+  summarize(mins_per_day = round(mean(minutes, na.rm = TRUE), 0)) %>%
+  arrange(desc(mins_per_day))
+  
+  
   # create this id here so that we can use it in problem 4 for the calclation of average time use. 
   # apparently CASEID does not uniquely identify rows, hence, we need to create some sort of ID so that we can calcuate the number 
   # of unique individuals from the long format table 

@@ -1,0 +1,17 @@
+---
+title: "Week 5 In class Activity"
+author: Denis Ostroushko
+editor: visual
+format: 
+  html: 
+    theme: sketchy
+---
+
+In this assignment, you will practice your Git and GitHub skills and also do a little plotting.
+
+See Assignment 2 on Canvas for instructions. You'll start by forking this repository.
+
+As part of the assignment, you'll replace the text in this file by your own.
+
+
+
